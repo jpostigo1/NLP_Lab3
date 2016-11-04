@@ -23,19 +23,19 @@ def parseDate(date):
     day_month = day_month_year[:6].strip()
     if(day_month[0] == '0'):
         day_month = day_month[1:]
+    day_month = re.sub(' ','-', day_month)
     arr.append(day_month)
 
 super_dict = {}
 punct = ";.?!,:()[]{}"
 exclude = set(string.punctuation)
 
-
+count = 0
 for mbox in os.listdir('./Mail/'):
     print(mbox)
     mail = mailbox.mbox('./Mail/' + mbox)
     super_dict[mbox] = {}
     #mail = mailbox.mbox('./Mail/Democrats-Clinton.mbox')
-    count = 0
 
     for message in mail:
         words = []
@@ -63,10 +63,10 @@ for mbox in os.listdir('./Mail/'):
         #print(words)
         #print()
         #count += 1
-        #if(count == 2):
-    #print(super_dict[mbox])
+#print(count)
+#print(super_dict[mbox])
 
 fdist = nltk.FreqDist(arr)
+#print(sum(fdist.values()))
 print(sorted(fdist.items(),key=lambda x: x[1]))
 #print(super_dict)
-
