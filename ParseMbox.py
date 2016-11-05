@@ -24,7 +24,6 @@ def getBody(msg):
         t = t.decode(charset)
     return t
 
-
 def parseDate(date):
     day_month_year = date.split(',')[1].strip()
     day_month = day_month_year[:6].strip()
@@ -127,6 +126,11 @@ for mbox in os.listdir('./Mail2/'):
             if(sent != ''):
                 sentArr.append(sent)
         print(sentArr)
+        '''
+
+
+        '''
+        #trying to do POS tagging with sentences
 
         sents = sent_tokenize(msg)
         #print(sents)
@@ -138,12 +142,18 @@ for mbox in os.listdir('./Mail2/'):
             if('$' in sent and
                    ('donate' in sent or 'give' in sent or
                     'donation' in sent or 'giving' in sent or
-                    'chip in' in sent or 'contribute' in sent or
+                    ('chip' in sent and 'in' in sent) or 'contribute' in sent or
                     'contribution' in sent)):
                 print(sent)
+                text = nltk.word_tokenize(sent)
+                pos = nltk.pos_tag(text)
+                for word, speech in pos:
+                    print(word, speech)
+                exit(1)
         '''
+
         #For getting individual words
-        prev_word = ''
+        #prev_word = ''
         for w in msg.split():
             word = re.sub('\n','',w)
             word = re.sub(u"\u200c",'',word)
@@ -168,7 +178,7 @@ for mbox in os.listdir('./Mail2/'):
                             'donation' in gram or 'giving' in gram or
                         ('chip' in gram and 'in' in gram) or
                             'contribute' in gram or 'contribution' in gram)):
-                print(gram)
+                #print(gram)
                 get_features(gram, mbox)
 
 
