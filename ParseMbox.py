@@ -1,13 +1,13 @@
-import mailbox, re, os, string, nltk
+import mailbox, re, os, string, nltk, random
 from nltk.corpus import wordnet
 from nltk import ngrams
 from nltk import sent_tokenize
-arr = []
 
+arr = []
+author_feats = []
 donate_words = ['donate', 'donation', 'give',
                 'contribute','contribution', ['chip','in']
                 ]
-
 
 def getcharsets(msg):
     charsets = set({})
@@ -18,7 +18,7 @@ def getcharsets(msg):
 
 def getBody(msg):
     while msg.is_multipart():
-        msg=msg.get_payload()[0]
+        msg = msg.get_payload()[0]
     t = msg.get_payload(decode=True)
     for charset in getcharsets(msg):
         t = t.decode(charset)
@@ -33,6 +33,7 @@ def parseDate(date):
     day_month = re.sub(' ','-', day_month)
     arr.append(day_month)
 
+
 def get_features(ngram, mbox):
     donation_amount = ngram[2]
     firstWord = ngram[0]
@@ -41,31 +42,70 @@ def get_features(ngram, mbox):
     fifthWord = ngram[4]
     author = mbox
 
+    #binning didn't help improve the accuracy
+    '''
+    #binning categories: $0-99, 100-199, 200+
+    bin1 = "0_99"
+    bin2 = "100_199"
+    bin3 = "200+"
+
+    num = re.findall(r'\d+',donation_amount)
+    num = int(num[0])
+    #print(num)
+    if(num >= 0 and num <= 99):
+        donation_amount = bin1
+    elif(num >= 100 and num <= 199):
+        donation_amount = bin2
+    else:
+        donation_amount = bin3
+    '''
+
+    #predict author based on donation amount
+    #and 4 words
     features = ({"first_word":firstWord,
                  "second_word":secondWord,
                  "fourth_word":fourthWord,
                  "fifth_word":fifthWord,
-                 "donation_amount":donation_amount,
-                 "author:":author})
-    return features
+                 "donation_amount":donation_amount},
+                author)
+    author_feats.append(features)
+    return
+
+def PredictAuthor():
+    avg_accuracy = 0
+    num_trials = 5
+    for i in range(num_trials):
+        ratio = len(author_feats)//3
+        random.shuffle(author_feats)
+        train_set = author_feats[:ratio]
+        test_set = author_feats[ratio:]
+
+        NBClassifier = nltk.NaiveBayesClassifier.train(train_set)
+        correct = 0
+        cnt = 0
+
+        for feature, label in test_set:
+            correctLabel = label
+            classifiedLabel = NBClassifier.classify(feature)
+            if (classifiedLabel == correctLabel):
+                correct += 1
+            cnt += 1
+        avg_accuracy += float(correct/cnt)
+        #print("Trial",str(i+1) + ":", correct/cnt)
+
+    return avg_accuracy/num_trials
 
 super_dict = {}
 punct = ";.?!,:()[]{}"
 exclude = set(string.punctuation)
-
-
-
-count = 0
+#count = 0
 for mbox in os.listdir('./Mail2/'):
     print(mbox)
     mail = mailbox.mbox('./Mail2/' + mbox)
     super_dict[mbox] = {}
-    #mail = mailbox.mbox('./Mail/Democrats-Clinton.mbox')
 
     for message in mail:
         words = []
-        #print(message['from'])
-        #print(message['date'])
         date = message['date']
         parseDate(date)
 
@@ -87,8 +127,7 @@ for mbox in os.listdir('./Mail2/'):
             if(sent != ''):
                 sentArr.append(sent)
         print(sentArr)
-        '''
-        '''
+
         sents = sent_tokenize(msg)
         #print(sents)
         for sent in sents:
@@ -103,11 +142,10 @@ for mbox in os.listdir('./Mail2/'):
                     'contribution' in sent)):
                 print(sent)
         '''
-
         #For getting individual words
         prev_word = ''
         for w in msg.split():
-            word = re.sub('\n', '',w)
+            word = re.sub('\n','',w)
             word = re.sub(u"\u200c",'',word)
             word = re.sub(u"\u200b",'',word)
             word = re.sub(r'<[^<]+?>', '',word)
@@ -118,31 +156,27 @@ for mbox in os.listdir('./Mail2/'):
                 word = ''.join(chr for chr in word
                                if chr not in punct)
                 if(word != '' and "http" not in word):
-                    words.append(word)
+                    #added .lower() to help with ngrams
+                    words.append(word.lower())
 
         sents = ' '.join(words)
-        #print(sents)
+
         fivegrams = ngrams(sents.split(), 5)
         for gram in fivegrams:
             if('$' in gram[2] and
                    ('donate' in gram or 'give' in gram or
-                    'donation' in gram or 'giving' in gram or
-                    'chip in' in gram or 'contribute' in gram or
-                    'contribution' in gram)):
+                            'donation' in gram or 'giving' in gram or
+                        ('chip' in gram and 'in' in gram) or
+                            'contribute' in gram or 'contribution' in gram)):
                 print(gram)
                 get_features(gram, mbox)
 
+
         super_dict[mbox][date]['body'] = words
+        #count += 1
+        #print(super_dict[mbox])
 
-        #print(words)
-        #print()
-        count += 1
-        #if(count == 20):
-        #    exit(1)
-    #print(super_dict[mbox])
-    #break
-#exit(1)
-
+print("   Average predict authorship accuracy: {}".format(PredictAuthor()))
 
 '''
 #Done with this part, look at dates.txt
