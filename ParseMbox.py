@@ -194,6 +194,7 @@ for mbox in os.listdir('./Mail2/'):
         super_dict[mbox][date]['body'] = words
 
 
+
     #how 'asking for money' is phrased?
     fdist = nltk.FreqDist(pos_arr).most_common(20)
 
