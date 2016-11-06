@@ -102,11 +102,13 @@ for mbox in os.listdir('./Mail2/'):
     mail = mailbox.mbox('./Mail2/' + mbox)
     super_dict[mbox] = {}
 
+    '''
     pos_arr = []
     count = 0
     ask_for_money = 0
     isAsking = False
     how_much_money = 0
+    '''
     for message in mail:
 
         words = []
@@ -119,20 +121,7 @@ for mbox in os.listdir('./Mail2/'):
 
         msg = getBody(message)
 
-        #For getting sentences
         '''
-        sentArr = []
-        for sent in re.split('[?.!]', msg):
-            sent = re.sub('\n', '',sent)
-            sent = re.sub(u"\u200c",'',sent)
-            sent = re.sub(u"\u200b",'',sent)
-            sent = re.sub(r'<[^<]+?>', '',sent)
-
-            if(sent != ''):
-                sentArr.append(sent)
-        print(sentArr)
-        '''
-
         #trying to do POS tagging with sentences
         sents = sent_tokenize(msg)
 
@@ -160,6 +149,8 @@ for mbox in os.listdir('./Mail2/'):
         count += 1
 
 
+
+        '''
         #For getting individual words
         for w in msg.split():
             word = re.sub('\n','',w)
@@ -185,31 +176,30 @@ for mbox in os.listdir('./Mail2/'):
                             'donation' in gram or 'giving' in gram or
                         ('chip' in gram and 'in' in gram) or
                             'contribute' in gram or 'contribution' in gram)):
-                amount = re.findall('\d+', gram[2])
-                how_much_money += float(amount[0])
+                #amount = re.findall('\d+', gram[2])
+                #how_much_money += float(amount[0])
                 #print(gram)
-                #get_features(gram, mbox)
+                get_features(gram, mbox)
+
 
 
         super_dict[mbox][date]['body'] = words
 
-
-
     #how 'asking for money' is phrased?
-    fdist = nltk.FreqDist(pos_arr).most_common(20)
+    #fdist = nltk.FreqDist(pos_arr).most_common(20)
 
-    print(fdist)
+    #print(fdist)
     #How often?
-    print("Frequency of asking for money: {}".format(float(ask_for_money/count)))
+    #print("Frequency of asking for money: {}".format(float(ask_for_money/count)))
     #How much?
-    print("How much money: ${}".format(how_much_money))
+    #print("How much money: ${}".format(how_much_money))
 
 
-'''
+
 print("   Average predict authorship accuracy: {}".format(PredictAuthor()))
 
 #Done with this part, look at dates.txt
-
+'''
 fdist = nltk.FreqDist(arr)
 print(count)
 print(sum(fdist.values()))
