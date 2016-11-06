@@ -1,5 +1,4 @@
 import mailbox, re, os, string, nltk, random
-from nltk.corpus import wordnet
 from nltk import ngrams
 from nltk import sent_tokenize
 
@@ -41,7 +40,7 @@ def get_features(ngram, mbox):
     fifthWord = ngram[4]
     author = mbox
 
-    #binning didn't help improve the accuracy
+    #binning didn't really help improve the accuracy
     '''
     #binning categories: $0-99, 100-199, 200+
     bin1 = "0_99"
@@ -97,13 +96,19 @@ def PredictAuthor():
 super_dict = {}
 punct = ";.?!,:()[]{}"
 exclude = set(string.punctuation)
-#count = 0
+count = 0
 for mbox in os.listdir('./Mail2/'):
     print(mbox)
     mail = mailbox.mbox('./Mail2/' + mbox)
     super_dict[mbox] = {}
 
+    pos_arr = []
+    count = 0
+    ask_for_money = 0
+    isAsking = False
+    how_much_money = 0
     for message in mail:
+
         words = []
         date = message['date']
         parseDate(date)
@@ -128,32 +133,34 @@ for mbox in os.listdir('./Mail2/'):
         print(sentArr)
         '''
 
-
-        '''
         #trying to do POS tagging with sentences
-
         sents = sent_tokenize(msg)
-        #print(sents)
+
         for sent in sents:
             sent = re.sub('\n', '',sent)
             sent = re.sub(u"\u200c",'',sent)
             sent = re.sub(u"\u200b",'',sent)
             sent = re.sub(r'<[^<]+?>', '',sent)
+
             if('$' in sent and
                    ('donate' in sent or 'give' in sent or
                     'donation' in sent or 'giving' in sent or
                     ('chip' in sent and 'in' in sent) or 'contribute' in sent or
                     'contribution' in sent)):
-                print(sent)
+
+                isAsking = True
                 text = nltk.word_tokenize(sent)
                 pos = nltk.pos_tag(text)
+
                 for word, speech in pos:
-                    print(word, speech)
-                exit(1)
-        '''
+                    pos_arr.append(speech)
+
+        if(isAsking):
+            ask_for_money += 1
+        count += 1
+
 
         #For getting individual words
-        #prev_word = ''
         for w in msg.split():
             word = re.sub('\n','',w)
             word = re.sub(u"\u200c",'',word)
@@ -170,7 +177,7 @@ for mbox in os.listdir('./Mail2/'):
                     words.append(word.lower())
 
         sents = ' '.join(words)
-
+        #get ngrams
         fivegrams = ngrams(sents.split(), 5)
         for gram in fivegrams:
             if('$' in gram[2] and
@@ -178,17 +185,28 @@ for mbox in os.listdir('./Mail2/'):
                             'donation' in gram or 'giving' in gram or
                         ('chip' in gram and 'in' in gram) or
                             'contribute' in gram or 'contribution' in gram)):
+                amount = re.findall('\d+', gram[2])
+                how_much_money += float(amount[0])
                 #print(gram)
-                get_features(gram, mbox)
+                #get_features(gram, mbox)
 
 
         super_dict[mbox][date]['body'] = words
-        #count += 1
-        #print(super_dict[mbox])
 
-print("   Average predict authorship accuracy: {}".format(PredictAuthor()))
+
+    #how 'asking for money' is phrased?
+    fdist = nltk.FreqDist(pos_arr).most_common(20)
+
+    print(fdist)
+    #How often?
+    print("Frequency of asking for money: {}".format(float(ask_for_money/count)))
+    #How much?
+    print("How much money: ${}".format(how_much_money))
+
 
 '''
+print("   Average predict authorship accuracy: {}".format(PredictAuthor()))
+
 #Done with this part, look at dates.txt
 
 fdist = nltk.FreqDist(arr)
