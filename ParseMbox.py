@@ -1,12 +1,17 @@
 import mailbox, re, os, string, nltk, random
 from nltk import ngrams
 from nltk import sent_tokenize
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
 
 arr = []
 author_feats = []
 donate_words = ['donate', 'donation', 'give',
-                'contribute','contribution', ['chip','in']
-                ]
+                'contribute','contribution', ['chip','in']]
+
+def GetVaderRatings(text):
+    # Using the vader sentiment analyzer, returns the dictionary of vader sentiments of the text.
+    return SentimentIntensityAnalyzer().polarity_scores(text)
 
 def getcharsets(msg):
     charsets = set({})
@@ -30,7 +35,7 @@ def parseDate(date):
         day_month = day_month[1:]
     day_month = re.sub(' ','-', day_month)
     arr.append(day_month)
-
+    return day_month
 
 def get_features(ngram, mbox):
     donation_amount = ngram[2]
@@ -197,6 +202,37 @@ for mbox in os.listdir('./Mail2/'):
 
 
 print("   Average predict authorship accuracy: {}".format(PredictAuthor()))
+
+sent_data = {}  # {date1: {name1: [val1, val2], name2: [val2]}, date2: ...}
+names = []
+for mbox in os.listdir('./Mail2/'):
+    for date in super_dict[mbox]:
+        body = super_dict[mbox][date]['body']
+        body = ' '.join(body)
+        vader_score = GetVaderRatings(body)
+        sentiment = vader_score["pos"]
+        name = mbox.split('.')[0]
+        names.append(name)
+        date = parseDate(date)
+
+        if date not in sent_data:
+            sent_data[date] = {}
+
+        if name in sent_data[date]:
+            sent_data[date][name].append(sentiment)
+        else:
+            sent_data[date][name] = [sentiment]
+
+file = open("sentiments.csv", "w")
+file.write("date," + ','.join(names) + '\n')
+for date in sent_data:
+    line = date + ","
+    for name in names:
+        vals = sent_data[date].get(name, '')
+        line += '' if len(vals) == 0 else sum(vals) / len(vals)
+    file.write(line + '\n')
+
+
 
 #Done with this part, look at dates.txt
 '''

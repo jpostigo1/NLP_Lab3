@@ -1,0 +1,20 @@
+NLP Lab 3
+Justin Postigo and Logan Williams
+
+
+Preprocessing steps:
+   • We got rid of html tags and unicode characters in the email bodies.
+   • We got rid of http links in the email bodies.
+   • We used python's mailbox module for parsing the mbox files.
+
+
+First finding: Frequency of Emails
+   Methods: We used nltk's FreqDist to count the number of emails each candidate sent per day. We also parsed the date
+   to just get the day and month.
+
+
+Second finding:
+
+
+
+Third finding:
